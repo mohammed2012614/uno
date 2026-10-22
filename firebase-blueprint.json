@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with game statistics and levels",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 80 },
+        "photoURL": { "type": "string", "maxLength": 512 },
+        "email": { "type": "string", "maxLength": 128 },
+        "xp": { "type": "number" },
+        "level": { "type": "number" },
+        "wins": { "type": "number" },
+        "gamesPlayed": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "displayName", "xp", "level", "wins", "gamesPlayed"]
+    },
+    "CustomEdition": {
+      "title": "CustomEdition",
+      "description": "User custom UNO game edition and deck preset",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 60, "minLength": 2 },
+        "description": { "type": "string", "maxLength": 200 },
+        "theme": { "type": "string", "maxLength": 40 },
+        "cardBackDesign": { "type": "string", "maxLength": 40 },
+        "stackDrawTwo": { "type": "boolean" },
+        "stackDrawFour": { "type": "boolean" },
+        "sevenZeroRule": { "type": "boolean" },
+        "jumpInRule": { "type": "boolean" },
+        "drawToMatch": { "type": "boolean" },
+        "forcePlay": { "type": "boolean" },
+        "customWildName": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "title", "theme"]
+    },
+    "GameRoom": {
+      "title": "GameRoom",
+      "description": "Online multiplayer game room state",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string", "maxLength": 32 },
+        "hostId": { "type": "string", "maxLength": 128 },
+        "hostName": { "type": "string", "maxLength": 80 },
+        "title": { "type": "string", "maxLength": 80 },
+        "status": { "type": "string", "enum": ["waiting", "playing", "finished"] },
+        "direction": { "type": "number" },
+        "currentTurnIndex": { "type": "number" },
+        "activePlayerId": { "type": "string", "maxLength": 128 },
+        "playerIds": { "type": "array" },
+        "topCard": { "type": "string", "maxLength": 40 },
+        "activeColor": { "type": "string", "maxLength": 20 },
+        "stackedDrawCount": { "type": "number" },
+        "winnerId": { "type": "string", "maxLength": 128 },
+        "editionTitle": { "type": "string", "maxLength": 60 },
+        "rulesPreset": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["roomId", "hostId", "status", "playerIds"]
+    },
+    "RoomPlayer": {
+      "title": "RoomPlayer",
+      "description": "Public player state in a game room",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string", "maxLength": 128 },
+        "roomId": { "type": "string", "maxLength": 32 },
+        "name": { "type": "string", "maxLength": 80 },
+        "avatar": { "type": "string", "maxLength": 512 },
+        "isReady": { "type": "boolean" },
+        "cardCount": { "type": "number" },
+        "hasCalledUno": { "type": "boolean" },
+        "isBot": { "type": "boolean" },
+        "joinedAt": { "type": "string" }
+      },
+      "required": ["playerId", "roomId", "name", "cardCount"]
+    },
+    "PlayerHand": {
+      "title": "PlayerHand",
+      "description": "Private card hand for a player in a room",
+      "type": "object",
+      "properties": {
+        "playerId": { "type": "string", "maxLength": 128 },
+        "roomId": { "type": "string", "maxLength": 32 },
+        "cards": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["playerId", "roomId", "cards"]
+    },
+    "RoomMessage": {
+      "title": "RoomMessage",
+      "description": "Chat and emoji reactions inside a room",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "roomId": { "type": "string", "maxLength": 32 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 80 },
+        "text": { "type": "string", "maxLength": 150 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "roomId", "senderId", "text"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and achievements"
+    },
+    "/users/{userId}/editions/{editionId}": {
+      "schema": "CustomEdition",
+      "description": "Custom game editions created by the user"
+    },
+    "/rooms/{roomId}": {
+      "schema": "GameRoom",
+      "description": "Live multiplayer UNO room state"
+    },
+    "/rooms/{roomId}/players/{playerId}": {
+      "schema": "RoomPlayer",
+      "description": "Public player statuses in room"
+    },
+    "/rooms/{roomId}/hands/{playerId}": {
+      "schema": "PlayerHand",
+      "description": "Private cards for the authorized player"
+    },
+    "/rooms/{roomId}/messages/{messageId}": {
+      "schema": "RoomMessage",
+      "description": "Realtime chat message in room"
+    }
+  }
+}

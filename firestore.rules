@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation helpers
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() <= 128
+        && data.displayName is string && data.displayName.size() <= 80
+        && (!('email' in data) || (data.email is string && data.email.size() <= 128))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 512))
+        && data.xp is number
+        && data.level is number
+        && data.wins is number
+        && data.gamesPlayed is number;
+    }
+
+    function isValidEdition(data) {
+      return data.id is string && data.id.size() <= 64
+        && data.ownerId is string && data.ownerId == request.auth.uid
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 60
+        && (!('description' in data) || (data.description is string && data.description.size() <= 200))
+        && data.theme is string && data.theme.size() <= 40;
+    }
+
+    function isValidRoom(data) {
+      return data.roomId is string && data.roomId.size() <= 32
+        && data.hostId is string && data.hostId.size() <= 128
+        && data.status in ['waiting', 'playing', 'finished']
+        && data.playerIds is list && data.playerIds.size() <= 10;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && incoming().uid == request.auth.uid;
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && incoming().uid == existing().uid;
+      allow delete: if isOwner(userId);
+
+      // Custom editions subcollection
+      match /editions/{editionId} {
+        allow read: if isSignedIn();
+        allow create: if isOwner(userId) && isValidId(editionId) && isValidEdition(incoming());
+        allow update: if isOwner(userId) && isValidId(editionId) && isValidEdition(incoming()) && incoming().ownerId == existing().ownerId;
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Multiplayer Game Rooms
+    match /rooms/{roomId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(roomId) && isValidRoom(incoming()) && incoming().hostId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(roomId) && isValidRoom(incoming()) && (
+        // Host actions (starting, resetting) or players updating gameState
+        resource.data.status != 'finished' || incoming().status == 'finished' || incoming().status == 'waiting'
+      );
+      allow delete: if isSignedIn() && existing().hostId == request.auth.uid;
+
+      // Public Room Players
+      match /players/{playerId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn() && isValidId(playerId);
+        allow delete: if isSignedIn() && (request.auth.uid == playerId || get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId == request.auth.uid);
+      }
+
+      // Private Player Hands (Guarded secrecy)
+      match /hands/{playerId} {
+        allow read: if isSignedIn() && (request.auth.uid == playerId);
+        allow create, update: if isSignedIn() && isValidId(playerId) && (
+          request.auth.uid == playerId || get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId == request.auth.uid
+        );
+        allow delete: if isSignedIn() && (request.auth.uid == playerId || get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId == request.auth.uid);
+      }
+
+      // Room chat / reactions
+      match /messages/{messageId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(messageId) && incoming().senderId == request.auth.uid && incoming().text.size() <= 150;
+        allow update, delete: if false;
+      }
+    }
+
+    // Test connection doc
+    match /test/connection {
+      allow read, write: if true;
+    }
+  }
+}

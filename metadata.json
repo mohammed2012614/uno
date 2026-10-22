@@ -1,0 +1,6 @@
+{
+  "name": "UNO Arena Online - لعبة أونو",
+  "description": "لعبة أونو التفاعلية مع اللعب أونلاين ضد الأصدقاء وضد البوتات بمستويات ذكاء متعددة، وتخصيص قواعد اللعبة والنسخ الخاصة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
