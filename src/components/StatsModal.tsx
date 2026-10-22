@@ -8,7 +8,7 @@ interface StatsModalProps {
 }
 
 export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
-  const { user, userStats, signInWithGoogle, signOut } = useAuth();
+  const { user, userStats, authError, signInWithGoogle, continueAsGuest, signOut } = useAuth();
 
   if (!isOpen) return null;
 
@@ -107,16 +107,31 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
                 <LogOut className="w-4 h-4" />
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={signInWithGoogle}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-black rounded-lg transition-transform active:scale-95 flex items-center gap-1"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>دخول</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={signInWithGoogle}
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-black rounded-lg transition-transform active:scale-95 flex items-center gap-1"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Google</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => continueAsGuest()}
+                  className="px-2.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-bold rounded-lg transition-colors border border-neutral-700"
+                >
+                  ضيف
+                </button>
+              </div>
             )}
           </div>
+
+          {authError && !user && (
+            <div className="p-2.5 bg-neutral-950 border border-amber-500/40 rounded-xl text-xs text-amber-300 text-center">
+              {authError}
+            </div>
+          )}
 
           {/* Level Progress Bar */}
           <div className="space-y-1.5">

@@ -28,7 +28,7 @@ export const CustomEditionBuilder: React.FC<CustomEditionBuilderProps> = ({
   onPlayEdition,
   activeEditionId,
 }) => {
-  const { user, signInWithGoogle } = useAuth();
+  const { user, authError, signInWithGoogle, continueAsGuest } = useAuth();
   const [editions, setEditions] = useState<CustomEdition[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,10 +44,23 @@ export const CustomEditionBuilder: React.FC<CustomEditionBuilderProps> = ({
     stackDrawFour: true,
   });
 
-  // Listen to user's saved editions in Firestore
+  // Listen to user's saved editions in Firestore or LocalStorage
   useEffect(() => {
     if (!user) {
       setEditions([]);
+      return;
+    }
+
+    // If user is guest/anonymous, use localStorage
+    if (!('emailVerified' in user)) {
+      const savedLocal = localStorage.getItem(`uno_editions_${user.uid}`);
+      if (savedLocal) {
+        try {
+          setEditions(JSON.parse(savedLocal));
+        } catch {
+          setEditions([]);
+        }
+      }
       return;
     }
 
@@ -103,6 +116,18 @@ export const CustomEditionBuilder: React.FC<CustomEditionBuilderProps> = ({
       updatedAt: new Date().toISOString(),
     };
 
+    if (!('emailVerified' in user)) {
+      // Guest mode: save locally
+      const updated = [newEdition, ...editions];
+      setEditions(updated);
+      localStorage.setItem(`uno_editions_${user.uid}`, JSON.stringify(updated));
+      setIsCreating(false);
+      setTitle('');
+      setDescription('');
+      setSaving(false);
+      return;
+    }
+
     const docPath = `users/${user.uid}/editions/${editionId}`;
     try {
       await setDoc(doc(db, 'users', user.uid, 'editions', editionId), newEdition);
@@ -118,6 +143,12 @@ export const CustomEditionBuilder: React.FC<CustomEditionBuilderProps> = ({
 
   const handleDeleteEdition = async (editionId: string) => {
     if (!user) return;
+    if (!('emailVerified' in user)) {
+      const updated = editions.filter((e) => e.id !== editionId);
+      setEditions(updated);
+      localStorage.setItem(`uno_editions_${user.uid}`, JSON.stringify(updated));
+      return;
+    }
     const docPath = `users/${user.uid}/editions/${editionId}`;
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'editions', editionId));
@@ -143,10 +174,16 @@ export const CustomEditionBuilder: React.FC<CustomEditionBuilderProps> = ({
             ميزة صنع النسخ الخاصة مقفلة
           </h2>
           <p className="text-neutral-400 text-sm sm:text-base leading-relaxed max-w-lg mx-auto mb-6">
-            بناءً على طلبك، يتطلب صنع النسخ المخصصة من بطاقات وقواعد أونو تسجيل الدخول بحساب
+            يتطلب صنع النسخ المخصصة من بطاقات وقواعد أونو تسجيل الدخول بحساب
             <span className="text-amber-400 font-bold"> Google </span>
-            لحفظ بطاقاتك الخاصة، إحصائياتك وتقدمك السحابي تلقائياً!
+            لحفظ بطاقاتك الخاصة، إحصائياتك وتقدمك تلقائياً!
           </p>
+
+          {authError && (
+            <div className="mb-6 p-3 bg-neutral-800/80 border border-amber-500/40 rounded-2xl text-xs text-amber-300 max-w-md mx-auto">
+              {authError}
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
@@ -156,6 +193,14 @@ export const CustomEditionBuilder: React.FC<CustomEditionBuilderProps> = ({
             >
               <LogIn className="w-5 h-5" />
               <span>تسجيل الدخول بحساب Google</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => continueAsGuest()}
+              className="w-full sm:w-auto px-6 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold rounded-2xl border border-neutral-700 transition-all text-xs sm:text-sm"
+            >
+              المتابعة كلاعب مميز (تجربة فورية)
             </button>
           </div>
 

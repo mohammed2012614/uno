@@ -36,7 +36,7 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
   onStartGame,
   onBackToMenu,
 }) => {
-  const { user, signInWithGoogle } = useAuth();
+  const { user, authError, signInWithGoogle, continueAsGuest } = useAuth();
 
   const [view, setView] = useState<'browse' | 'create' | 'in_lobby'>('browse');
   const [roomCodeInput, setRoomCodeInput] = useState('');
@@ -320,14 +320,31 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
           <p className="text-neutral-400 text-sm mb-6 leading-relaxed">
             سجل دخولك بحساب Google لإنشاء غرف متعددة اللاعبين أو الانضمام لأصدقائك برمز الغرفة.
           </p>
-          <button
-            type="button"
-            onClick={signInWithGoogle}
-            className="w-full py-3 bg-gradient-to-r from-red-600 via-amber-500 to-amber-600 hover:brightness-110 text-neutral-950 font-black rounded-xl shadow-lg flex items-center justify-center gap-2"
-          >
-            <LogIn className="w-5 h-5" />
-            <span>تسجيل الدخول للمتابعة</span>
-          </button>
+
+          {authError && (
+            <div className="mb-4 p-3 bg-neutral-800/80 border border-amber-500/40 rounded-xl text-xs text-amber-300">
+              {authError}
+            </div>
+          )}
+
+          <div className="space-y-2.5">
+            <button
+              type="button"
+              onClick={signInWithGoogle}
+              className="w-full py-3.5 bg-gradient-to-r from-red-600 via-amber-500 to-amber-600 hover:brightness-110 text-neutral-950 font-black rounded-xl shadow-lg flex items-center justify-center gap-2"
+            >
+              <LogIn className="w-5 h-5" />
+              <span>تسجيل الدخول بحساب Google</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => continueAsGuest()}
+              className="w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold rounded-xl text-xs transition-colors border border-neutral-700"
+            >
+              المتابعة بحساب لاعب ضيف
+            </button>
+          </div>
         </div>
       </div>
     );
